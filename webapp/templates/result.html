@@ -1,0 +1,975 @@
+{% extends "base.html" %}
+
+{% block title %}Kết quả Chẩn đoán - PneumoAI{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ═══════════════════════════════════════════════════════════
+   PRINT STYLES — Phiếu kết quả y khoa chuẩn A4
+   Ẩn toàn bộ UI web, chỉ hiện #print-report
+═══════════════════════════════════════════════════════════ */
+    @media print {
+
+        /* Reset toàn bộ web UI */
+        body {
+            background: #fff !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            font-family: 'Times New Roman', Times, serif !important;
+            color: #000 !important;
+        }
+
+        .navbar,
+        footer,
+        .result-hero,
+        .result-actions,
+        .result-disclaimer,
+        .result-panel-header .form-range,
+        #heatmapOpacity,
+        nav,
+        .flash-stack,
+        .error-modal-overlay,
+        .btn,
+        button,
+        .result-btn-primary,
+        .result-btn-outline,
+        .result-btn-outline-info,
+        .result-empty-visual p,
+        .gradcam-colorbar {
+            display: none !important;
+        }
+
+        /* Ẩn toàn bộ trang web */
+        body>* {
+            display: none !important;
+        }
+
+        main {
+            display: block !important;
+            padding: 0 !important;
+            margin: 0 !important;
+        }
+
+        .result-page {
+            display: none !important;
+        }
+
+        /* Chỉ hiện phiếu in */
+        #print-report {
+            display: block !important;
+        }
+
+        /* Page setup */
+        @page {
+            size: A4 portrait;
+            margin: 15mm 15mm 15mm 20mm;
+        }
+
+        /* Print report layout */
+        #print-report {
+            width: 100%;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            color: #000;
+        }
+
+        /* Hospital header */
+        .pr-header {
+            border-bottom: 2.5pt solid #000;
+            padding-bottom: 6pt;
+            margin-bottom: 10pt;
+        }
+
+        .pr-hospital-name {
+            font-size: 13pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-align: center;
+            margin: 0;
+        }
+
+        .pr-hospital-sub {
+            font-size: 10pt;
+            text-align: center;
+            margin: 1pt 0 0;
+        }
+
+        .pr-report-title {
+            font-size: 15pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            text-align: center;
+            margin: 8pt 0 2pt;
+            letter-spacing: 1pt;
+        }
+
+        .pr-report-code {
+            font-size: 10pt;
+            text-align: center;
+            color: #333;
+            margin: 0;
+        }
+
+        /* Section headings */
+        .pr-section-title {
+            font-size: 11pt;
+            font-weight: bold;
+            text-transform: uppercase;
+            border-bottom: 1pt solid #000;
+            padding-bottom: 2pt;
+            margin: 10pt 0 6pt;
+            letter-spacing: 0.5pt;
+        }
+
+        /* Info table */
+        .pr-info-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 8pt;
+        }
+
+        .pr-info-table td {
+            padding: 2pt 4pt;
+            font-size: 10.5pt;
+            vertical-align: top;
+        }
+
+        .pr-info-table td:first-child {
+            width: 38%;
+            font-weight: bold;
+            white-space: nowrap;
+        }
+
+        .pr-info-table td:nth-child(2) {
+            width: 2%;
+        }
+
+        /* Result box */
+        .pr-result-box {
+            border: 2pt solid #000;
+            padding: 8pt 12pt;
+            margin: 8pt 0;
+            display: flex;
+            align-items: center;
+            gap: 12pt;
+        }
+
+        .pr-result-label {
+            font-size: 11pt;
+            font-weight: bold;
+            min-width: 120pt;
+        }
+
+        .pr-result-value {
+            font-size: 20pt;
+            font-weight: bold;
+        }
+
+        .pr-result-value.positive {
+            color: #000;
+        }
+
+        .pr-confidence {
+            font-size: 10pt;
+            margin-left: auto;
+        }
+
+        /* Probability table */
+        .pr-prob-table {
+            width: 60%;
+            border-collapse: collapse;
+            margin: 4pt 0 8pt;
+        }
+
+        .pr-prob-table th {
+            font-size: 10pt;
+            font-weight: bold;
+            border: 1pt solid #555;
+            padding: 3pt 8pt;
+            background: #f0f0f0;
+            text-align: left;
+        }
+
+        .pr-prob-table td {
+            font-size: 10pt;
+            border: 1pt solid #555;
+            padding: 3pt 8pt;
+        }
+
+        .pr-prob-table .prob-bar-cell {
+            width: 120pt;
+        }
+
+        .pr-prob-bar-bg {
+            background: #e0e0e0;
+            height: 9pt;
+            border-radius: 2pt;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+            vertical-align: middle;
+        }
+
+        .pr-prob-bar-fill {
+            height: 100%;
+            background: #333;
+            display: block;
+        }
+
+        /* Images */
+        .pr-images {
+            display: flex;
+            gap: 12pt;
+            margin: 6pt 0 8pt;
+            page-break-inside: avoid;
+        }
+
+        .pr-image-box {
+            flex: 1;
+            border: 1pt solid #888;
+        }
+
+        .pr-image-label {
+            font-size: 9pt;
+            font-weight: bold;
+            background: #f0f0f0;
+            padding: 2pt 6pt;
+            border-bottom: 1pt solid #888;
+            text-align: center;
+        }
+
+        .pr-image-box img {
+            width: 100%;
+            height: auto;
+            display: block;
+            max-height: 160pt;
+            object-fit: contain;
+            background: #000;
+        }
+
+        /* Severity / Brixia table */
+        .pr-severity-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 4pt 0 8pt;
+            font-size: 10pt;
+        }
+
+        .pr-severity-table th {
+            border: 1pt solid #555;
+            padding: 3pt 6pt;
+            background: #f0f0f0;
+            font-weight: bold;
+            text-align: center;
+        }
+
+        .pr-severity-table td {
+            border: 1pt solid #555;
+            padding: 3pt 6pt;
+            text-align: center;
+        }
+
+        .pr-severity-table td.label-cell {
+            text-align: left;
+            font-weight: bold;
+        }
+
+        /* Grade badge */
+        .pr-grade {
+            font-size: 13pt;
+            font-weight: bold;
+        }
+
+        /* Disclaimer */
+        .pr-disclaimer {
+            border: 1pt solid #888;
+            background: #fafafa;
+            padding: 6pt 10pt;
+            font-size: 9pt;
+            margin: 10pt 0;
+            font-style: italic;
+        }
+
+        .pr-disclaimer strong {
+            font-style: normal;
+        }
+
+        /* Signature block */
+        .pr-sign-block {
+            display: flex;
+            gap: 0;
+            margin-top: 16pt;
+            page-break-inside: avoid;
+        }
+
+        .pr-sign-col {
+            flex: 1;
+            text-align: center;
+            font-size: 10pt;
+        }
+
+        .pr-sign-title {
+            font-weight: bold;
+            margin-bottom: 2pt;
+        }
+
+        .pr-sign-name {
+            margin-top: 36pt;
+            font-style: italic;
+            border-top: 1pt solid #555;
+            display: inline-block;
+            min-width: 100pt;
+            padding-top: 2pt;
+        }
+
+        /* Footer bar */
+        .pr-footer-bar {
+            border-top: 1pt solid #ccc;
+            margin-top: 12pt;
+            padding-top: 4pt;
+            font-size: 8pt;
+            color: #555;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        /* Page break helpers */
+        .pr-page-break {
+            page-break-before: always;
+        }
+
+        .pr-no-break {
+            page-break-inside: avoid;
+        }
+
+        /* Watermark */
+        .pr-watermark {
+            font-size: 9pt;
+            color: #aaa;
+            text-align: center;
+            margin-top: 4pt;
+        }
+    }
+
+    /* Screen — ẩn phiếu in khi xem web bình thường */
+    @media screen {
+        #print-report {
+            display: none !important;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% set is_pneumonia = diagnosis.prediction == 'PNEUMONIA'
+or diagnosis.prediction == 'Viêm phổi'
+or diagnosis.prediction_vi == 'Viêm phổi' %}
+
+<div class="result-page">
+
+    {# ══════════════════════════════════════════════════════════════
+    HERO BANNER
+    ══════════════════════════════════════════════════════════════ #}
+    <div class="result-hero {% if is_pneumonia %}result-hero-danger{% else %}result-hero-success{% endif %}">
+        <div class="container">
+            <div class="row align-items-center g-3">
+                <div class="col-lg-8">
+                    <p class="result-hero-kicker">Kết quả AI</p>
+                    <h1 class="result-hero-title">Kết quả Chẩn đoán</h1>
+                    <p class="result-hero-subtitle">
+                        Mã chẩn đoán #{{ diagnosis.id }}
+                        · {{ diagnosis.created_at.strftime('%d/%m/%Y %H:%M') }}
+                    </p>
+                </div>
+                <div class="col-lg-4">
+                    <div class="result-hero-side">
+                        <span class="result-hero-status
+                            {% if is_pneumonia %}result-status-danger{% else %}result-status-success{% endif %}">
+                            {% if is_pneumonia %}
+                            <i class="bi bi-exclamation-circle-fill me-1"></i>
+                            {% else %}
+                            <i class="bi bi-check-circle-fill me-1"></i>
+                            {% endif %}
+                            {{ diagnosis.prediction }}
+                        </span>
+                        <div class="result-hero-confidence">
+                            Độ tin cậy {{ "%.1f"|format(diagnosis.confidence) }}%
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container">
+
+        {# ══════════════════════════════════════════════════════════════
+        SUMMARY CARD — xác suất phân loại + thông tin bệnh nhân
+        ══════════════════════════════════════════════════════════════ #}
+        <div class="result-summary-card">
+            <div class="row g-4 align-items-center">
+
+                <div class="col-md-4 text-center">
+                    <div class="result-summary-icon
+                        {% if is_pneumonia %}result-summary-danger{% else %}result-summary-success{% endif %}">
+                        {% if is_pneumonia %}
+                        <i class="bi bi-exclamation-triangle"></i>
+                        {% else %}
+                        <i class="bi bi-check-circle"></i>
+                        {% endif %}
+                    </div>
+                    <h3 class="result-summary-label
+                        {% if is_pneumonia %}text-danger{% else %}text-success{% endif %}">
+                        {{ diagnosis.prediction }}
+                    </h3>
+                </div>
+
+                <div class="col-md-8">
+                    {# Thanh xác suất Bình thường #}
+                    <div class="result-metric mb-3">
+                        <div class="result-metric-header">
+                            <span>Bình thường</span>
+                            <strong>{{ "%.1f"|format(diagnosis.prob_normal) }}%</strong>
+                        </div>
+                        <div class="result-progress">
+                            <div class="result-progress-fill bg-success"
+                                data-progress-width="{{ diagnosis.prob_normal }}"></div>
+                        </div>
+                    </div>
+
+                    {# Thanh xác suất Viêm phổi #}
+                    <div class="result-metric mb-0">
+                        <div class="result-metric-header">
+                            <span>Viêm phổi</span>
+                            <strong>{{ "%.1f"|format(diagnosis.prob_pneumonia) }}%</strong>
+                        </div>
+                        <div class="result-progress">
+                            <div class="result-progress-fill bg-danger"
+                                data-progress-width="{{ diagnosis.prob_pneumonia }}"></div>
+                        </div>
+                    </div>
+
+                    {% if diagnosis.patient_name or diagnosis.patient_age %}
+                    <div class="result-patient-info">
+                        <i class="bi bi-person-circle"></i>
+                        <div>
+                            {% if diagnosis.patient_name %}
+                            <strong>Bệnh nhân:</strong> {{ diagnosis.patient_name }}
+                            {% endif %}
+                            {% if diagnosis.patient_age %}
+                            {% if diagnosis.patient_name %} · {% endif %}<strong>Tuổi:</strong> {{ diagnosis.patient_age
+                            }}
+                            {% endif %}
+                            {% if diagnosis.notes %}
+                            <span class="result-patient-note">
+                                · <strong>Ghi chú:</strong> {{ diagnosis.notes }}
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+            </div>
+        </div>
+
+        {# ══════════════════════════════════════════════════════════════
+        ẢNH X-QUANG + HEATMAP
+        ══════════════════════════════════════════════════════════════ #}
+        <div class="row g-4 mb-4">
+
+            <div class="col-lg-6">
+                <div class="result-panel h-100">
+                    <div
+                        class="result-panel-header result-panel-header-neutral d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0"><i class="bi bi-image me-2"></i>Ảnh X-quang gốc</h6>
+                        {% if diagnosis.gradcam_path %}
+                        <div class="d-flex align-items-center gap-2">
+                            <label for="heatmapOpacity" class="form-label mb-0 small text-muted">Heatmap
+                                Overlay:</label>
+                            <input type="range" class="form-range" id="heatmapOpacity" min="0" max="1" step="0.05"
+                                value="0" style="width: 100px;">
+                        </div>
+                        {% endif %}
+                    </div>
+                    <div class="result-panel-body">
+                        <div class="position-relative w-100 h-100"
+                            style="overflow: hidden; display: flex; justify-content: center; align-items: center;">
+                            <img src="{{ url_for('static', filename='uploads/' + diagnosis.filename) }}"
+                                alt="Original X-ray" class="result-preview-image"
+                                style="width: 100%; height: auto; object-fit: contain;">
+                            {% if diagnosis.gradcam_path %}
+                            <img src="{{ url_for('static', filename='gradcam/' + diagnosis.gradcam_path) }}"
+                                alt="Heatmap Overlay" class="result-preview-image position-absolute" id="overlayGradcam"
+                                data-overlay="gradcam"
+                                style="top: 0; left: 0; width: 100%; height: 100%; opacity: 0; object-fit: contain; transition: opacity 0.1s; pointer-events: none;">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="result-panel h-100">
+                    <div class="result-panel-header result-panel-header-accent">
+                        <h6><i class="bi bi-eye me-2"></i>Grad-CAM Heatmap</h6>
+                    </div>
+                    <div class="result-panel-body">
+                        {% if diagnosis.gradcam_path %}
+                        <div class="gradcam-heatmap-wrapper">
+                            <img src="{{ url_for('static', filename='gradcam/' + diagnosis.gradcam_path) }}"
+                                alt="Grad-CAM Heatmap" class="result-preview-image heatmap-image">
+                            <div class="gradcam-colorbar" aria-hidden="true">
+                                <div class="colorbar-gradient"></div>
+                            </div>
+                        </div>
+                        <p class="mt-2 mb-0 text-muted small">
+                            Vùng <span class="fw-semibold text-danger">đỏ/vàng</span>: Grad-CAM kích hoạt cao —
+                            tương ứng vùng nghi ngờ tổn thương.
+                            Vùng <span class="fw-semibold text-primary">xanh</span>: ít ảnh hưởng đến quyết định.
+                        </p>
+                        {% else %}
+                        <div class="result-empty-visual">
+                            <i class="bi bi-exclamation-circle"></i>
+                            <p>Không thể tạo Grad-CAM</p>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        {# ══════════════════════════════════════════════════════════════
+        GIẢI THÍCH KỸ THUẬT + THÔNG TIN CA
+        ══════════════════════════════════════════════════════════════ #}
+        <div class="row g-4 mb-4">
+
+            <div class="col-lg-6">
+                <div class="result-panel h-100">
+                    <div class="result-panel-header result-panel-header-light">
+                        <h6><i class="bi bi-info-circle me-2"></i>Về Grad-CAM</h6>
+                    </div>
+                    <div class="result-panel-body">
+                        <p class="mb-2">
+                            <strong>Grad-CAM</strong> tạo bản đồ kích hoạt theo gradient để
+                            làm nổi bật các vùng ảnh ảnh hưởng mạnh đến quyết định phân loại.
+                        </p>
+                        <p class="mb-0">
+                            Vùng đỏ/vàng biểu thị mức kích hoạt cao, giúp bác sĩ kiểm chứng vùng nghi ngờ nhanh hơn.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-6">
+                <div class="result-panel h-100">
+                    <div class="result-panel-header result-panel-header-light">
+                        <h6><i class="bi bi-clock me-2"></i>Thông tin chẩn đoán</h6>
+                    </div>
+                    <div class="result-panel-body">
+                        <div class="result-meta-grid">
+                            <div>
+                                <strong>Thời gian</strong>
+                                <p>{{ diagnosis.created_at.strftime('%d/%m/%Y %H:%M:%S') }}</p>
+                            </div>
+                            <div>
+                                <strong>Tên file</strong>
+                                <p>{{ diagnosis.filename }}</p>
+                            </div>
+                            <div>
+                                <strong>Mô hình</strong>
+                                <p>Hybrid ViT</p>
+                            </div>
+                            {% if diagnosis.preprocess_time is not none %}
+                            <div>
+                                <strong>Thời gian tiền xử lý ảnh</strong>
+                                <p>{{ "%.2f"|format(diagnosis.preprocess_time * 1000) }} ms</p>
+                            </div>
+                            {% endif %}
+                            {% if diagnosis.inference_time is not none %}
+                            <div>
+                                <strong>Thời gian suy luận AI</strong>
+                                <p>{{ "%.2f"|format(diagnosis.inference_time * 1000) }} ms</p>
+                            </div>
+                            {% endif %}
+                            {% if diagnosis.gradcam_time is not none %}
+                            <div>
+                                <strong>Thời gian tạo Grad-CAM</strong>
+                                <p>{{ "%.2f"|format(diagnosis.gradcam_time * 1000) }} ms</p>
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        {# ══════════════════════════════════════════════════════════════
+        DISCLAIMER + ACTIONS
+        ══════════════════════════════════════════════════════════════ #}
+        <div class="result-disclaimer">
+            <i class="bi bi-exclamation-triangle-fill"></i>
+            <p>
+                <strong>Lưu ý:</strong> Kết quả này chỉ mang tính chất hỗ trợ tham khảo.
+                Vui lòng tham vấn bác sĩ chuyên khoa để có chẩn đoán chính xác nhất.
+            </p>
+        </div>
+
+        <div class="result-actions">
+            <a href="{{ url_for('index') }}" class="btn result-btn-primary">
+                <i class="bi bi-plus-circle me-2"></i>Chẩn đoán mới
+            </a>
+            <a href="{{ url_for('history') }}" class="btn result-btn-outline">
+                <i class="bi bi-clock-history me-2"></i>Xem lịch sử
+            </a>
+            <button onclick="window.print()" class="btn result-btn-outline-info" id="btn-print-medical">
+                <i class="bi bi-printer me-2"></i>In phiếu kết quả
+            </button>
+        </div>
+
+    </div>{# /container #}
+</div>{# /result-page #}
+
+{# ══════════════════════════════════════════════════════════════
+PHIẾU KẾT QUẢ Y KHOA — chỉ hiện khi in (display:none trên màn hình)
+══════════════════════════════════════════════════════════════ #}
+<div id="print-report">
+
+    {# ── TIÊU ĐỀ CƠ SỞ Y TẾ ── #}
+    <div class="pr-header">
+        <div style="display:flex; align-items:flex-start; gap:12pt;">
+            <div style="flex:1;">
+                <p class="pr-hospital-name">Hệ thống hỗ trợ chẩn đoán hình ảnh y tế</p>
+                <p class="pr-hospital-sub">PneumoAI &mdash; Ứng dụng AI phát hiện viêm phổi từ X-quang ngực</p>
+                <p class="pr-hospital-sub" style="font-size:9pt;">Đây là công cụ hỗ trợ, không thay thế chẩn đoán của
+                    bác sĩ</p>
+            </div>
+            <div style="text-align:right; font-size:9pt; color:#555; min-width:90pt;">
+                <div>Mã số: <strong>#{{ diagnosis.id }}</strong></div>
+                <div>Ngày: <strong>{{ diagnosis.created_at.strftime('%d/%m/%Y') }}</strong></div>
+                <div>Giờ: <strong>{{ diagnosis.created_at.strftime('%H:%M:%S') }}</strong></div>
+            </div>
+        </div>
+        <p class="pr-report-title">Phiếu kết quả chẩn đoán hình ảnh</p>
+        <p class="pr-report-code">Hệ thống tự động &bull; Mã chẩn đoán: #{{ diagnosis.id }} &bull; Phát hành: {{
+            diagnosis.created_at.strftime('%d/%m/%Y %H:%M') }}</p>
+    </div>
+
+    {# ── I. THÔNG TIN BỆNH NHÂN & CA CHẨN ĐOÁN ── #}
+    <div class="pr-section-title">I. Thông tin bệnh nhân &amp; ca chẩn đoán</div>
+    <table class="pr-info-table">
+        <tr>
+            <td>Họ và tên bệnh nhân</td>
+            <td>:</td>
+            <td>{{ diagnosis.patient_name if diagnosis.patient_name else '(Không có thông tin)' }}</td>
+            <td style="width:40%;"></td>
+        </tr>
+        {% if diagnosis.patient_age %}
+        <tr>
+            <td>Tuổi bệnh nhân</td>
+            <td>:</td>
+            <td>{{ diagnosis.patient_age }} tuổi</td>
+            <td></td>
+        </tr>
+        {% endif %}
+        <tr>
+            <td>Ngày chẩn đoán</td>
+            <td>:</td>
+            <td>{{ diagnosis.created_at.strftime('%d') }} tháng {{ diagnosis.created_at.strftime('%m') }} năm {{
+                diagnosis.created_at.strftime('%Y') }}</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Giờ thực hiện</td>
+            <td>:</td>
+            <td>{{ diagnosis.created_at.strftime('%H') }} giờ {{ diagnosis.created_at.strftime('%M') }} phút {{
+                diagnosis.created_at.strftime('%S') }} giây</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Mã chẩn đoán</td>
+            <td>:</td>
+            <td><strong>#{{ diagnosis.id }}</strong></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Tên file ảnh gốc</td>
+            <td>:</td>
+            <td>{{ diagnosis.filename }}</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>Mô hình AI sử dụng</td>
+            <td>:</td>
+            <td>Hybrid ViT (DenseNet121 + Vision Transformer) — v6</td>
+            <td></td>
+        </tr>
+        {% if diagnosis.preprocess_time is not none %}
+        <tr>
+            <td>Thời gian tiền xử lý ảnh</td>
+            <td>:</td>
+            <td>{{ "%.2f"|format(diagnosis.preprocess_time * 1000) }} ms</td>
+            <td></td>
+        </tr>
+        {% endif %}
+        {% if diagnosis.inference_time is not none %}
+        <tr>
+            <td>Thời gian suy luận AI</td>
+            <td>:</td>
+            <td>{{ "%.2f"|format(diagnosis.inference_time * 1000) }} ms</td>
+            <td></td>
+        </tr>
+        {% endif %}
+        {% if diagnosis.gradcam_time is not none %}
+        <tr>
+            <td>Thời gian tạo Grad-CAM</td>
+            <td>:</td>
+            <td>{{ "%.2f"|format(diagnosis.gradcam_time * 1000) }} ms</td>
+            <td></td>
+        </tr>
+        {% endif %}
+        {% if diagnosis.notes %}
+        <tr>
+            <td>Ghi chú lâm sàng</td>
+            <td>:</td>
+            <td colspan="2">{{ diagnosis.notes }}</td>
+        </tr>
+        {% endif %}
+    </table>
+
+    {# ── II. KẾT QUẢ PHÂN LOẠI AI ── #}
+    <div class="pr-section-title">II. Kết quả phân loại AI</div>
+
+    <div class="pr-result-box">
+        <div class="pr-result-label">Kết luận AI:</div>
+        <div class="pr-result-value {% if is_pneumonia %}positive{% endif %}">
+            {% if is_pneumonia %}⚠ VIÊM PHỔI (PNEUMONIA){% else %}✓ BÌNH THƯỜNG (NORMAL){% endif %}
+        </div>
+        <div class="pr-confidence">Độ tin cậy: <strong>{{ "%.1f"|format(diagnosis.confidence) }}%</strong></div>
+    </div>
+
+    <p style="font-size:10pt; margin:4pt 0 6pt;"><strong>Xác suất phân loại chi tiết:</strong></p>
+    <table class="pr-prob-table">
+        <thead>
+            <tr>
+                <th>Phân loại</th>
+                <th>Xác suất (%)</th>
+                <th class="prob-bar-cell">Biểu đồ</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>Bình thường (Normal)</td>
+                <td style="text-align:center;"><strong>{{ "%.1f"|format(diagnosis.prob_normal) }}%</strong></td>
+                <td>
+                    <div class="pr-prob-bar-bg">
+                        <div class="pr-prob-bar-fill" style="width:{{ diagnosis.prob_normal }}%;"></div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td>Viêm phổi (Pneumonia)</td>
+                <td style="text-align:center;"><strong>{{ "%.1f"|format(diagnosis.prob_pneumonia) }}%</strong></td>
+                <td>
+                    <div class="pr-prob-bar-bg">
+                        <div class="pr-prob-bar-fill" style="width:{{ diagnosis.prob_pneumonia }}%;"></div>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    {# ── III. HÌNH ẢNH X-QUANG VÀ GRAD-CAM ── #}
+    <div class="pr-section-title">III. Hình ảnh X-quang &amp; bản đồ kích hoạt Grad-CAM</div>
+
+    <div class="pr-images pr-no-break">
+        <div class="pr-image-box">
+            <div class="pr-image-label">Ảnh X-quang ngực gốc (PA view)</div>
+            <img src="{{ request.url_root }}static/uploads/{{ diagnosis.filename }}" alt="X-ray gốc"
+                crossorigin="anonymous">
+        </div>
+        {% if diagnosis.gradcam_path %}
+        <div class="pr-image-box">
+            <div class="pr-image-label">Bản đồ kích hoạt Grad-CAM (Vùng nghi tổn thương)</div>
+            <img src="{{ request.url_root }}static/gradcam/{{ diagnosis.gradcam_path }}" alt="Grad-CAM"
+                crossorigin="anonymous">
+        </div>
+        {% else %}
+        <div class="pr-image-box" style="display:flex; align-items:center; justify-content:center; min-height:120pt;">
+            <div class="pr-image-label">Grad-CAM không khả dụng</div>
+        </div>
+        {% endif %}
+    </div>
+    <p style="font-size:9pt; font-style:italic; margin:2pt 0 6pt;">
+        <strong>Chú thích Grad-CAM:</strong>
+        Vùng màu đỏ/cam = kích hoạt cao (nghi ngờ tổn thương) &bull;
+        Vùng màu xanh lam = ít ảnh hưởng đến quyết định AI.
+        Bản đồ này giúp bác sĩ kiểm chứng vùng AI phát hiện bất thường.
+    </p>
+
+    {# ── IV. ĐÁNH GIÁ MỨC ĐỘ (CHỈ KHI VIÊM PHỔI) ── #}
+    {% if is_pneumonia and diagnosis.severity_grade_vi %}
+    <div class="pr-section-title">IV. Đánh giá mức độ tổn thương phổi</div>
+    <table class="pr-severity-table pr-no-break">
+        <thead>
+            <tr>
+                <th style="text-align:left;">Chỉ số</th>
+                <th>Giá trị</th>
+                <th>Đơn vị / Ghi chú</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="label-cell">Mức độ tổn thương (Grade)</td>
+                <td><span class="pr-grade">{{ diagnosis.severity_grade_vi }} ({{ diagnosis.severity_grade_en }})</span>
+                </td>
+                <td>Nhẹ / Trung bình / Nặng</td>
+            </tr>
+            {% if diagnosis.severity_score is not none %}
+            <tr>
+                <td class="label-cell">Điểm tổng hợp (Composite score)</td>
+                <td>{{ "%.3f"|format(diagnosis.severity_score) }}</td>
+                <td>Thang [0.0 – 1.0]</td>
+            </tr>
+            {% endif %}
+            {% if diagnosis.affected_area_pct is not none %}
+            <tr>
+                <td class="label-cell">Diện tích phổi bị ảnh hưởng</td>
+                <td>{{ "%.1f"|format(diagnosis.affected_area_pct) }}%</td>
+                <td>% toàn bộ vùng phổi</td>
+            </tr>
+            {% endif %}
+            {% if diagnosis.left_area_pct is not none %}
+            <tr>
+                <td class="label-cell">Phổi phải bệnh nhân (ảnh trái)</td>
+                <td>{{ "%.1f"|format(diagnosis.left_area_pct) }}%</td>
+                <td>% diện tích bị kích hoạt</td>
+            </tr>
+            {% endif %}
+            {% if diagnosis.right_area_pct is not none %}
+            <tr>
+                <td class="label-cell">Phổi trái bệnh nhân (ảnh phải)</td>
+                <td>{{ "%.1f"|format(diagnosis.right_area_pct) }}%</td>
+                <td>% diện tích bị kích hoạt</td>
+            </tr>
+            {% endif %}
+            {% if diagnosis.mean_intensity is not none %}
+            <tr>
+                <td class="label-cell">Cường độ trung bình (bias-corrected)</td>
+                <td>{{ "%.4f"|format(diagnosis.mean_intensity) }}</td>
+                <td>Mean intensity × area ratio</td>
+            </tr>
+            {% endif %}
+        </tbody>
+    </table>
+    {% if diagnosis.severity_description %}
+    <p style="font-size:10pt; margin:0 0 6pt;">
+        <strong>Mô tả lâm sàng:</strong> {{ diagnosis.severity_description }}
+    </p>
+    {% endif %}
+    {% endif %}
+
+    {# ── V. PHƯƠNG PHÁP VÀ GIỚI HẠN KỸ THUẬT ── #}
+    <div class="pr-section-title">{% if is_pneumonia and diagnosis.severity_grade_vi %}V{% else %}IV{% endif %}. Phương
+        pháp kỹ thuật &amp; giới hạn</div>
+    <p style="font-size:10pt; margin:0 0 4pt;">
+        <strong>Mô hình AI:</strong>
+        Hybrid Vision Transformer (HybridViT v6) kết hợp backbone DenseNet-121 và khối Transformer 6 lớp.
+        Mô hình được huấn luyện trên tập dữ liệu X-ray ngực công khai (Kaggle Chest X-Ray Images — Pneumonia,
+        ~5,863 ảnh) đạt độ chính xác kiểm định ~98%.
+    </p>
+    <p style="font-size:10pt; margin:0 0 4pt;">
+        <strong>Grad-CAM:</strong>
+        Gradient-weighted Class Activation Mapping trực quan hoá vùng ảnh ảnh hưởng đến quyết định phân loại.
+        Ngưỡng kích hoạt được tính bằng phương pháp Otsu adaptive threshold.
+    </p>
+    <p style="font-size:10pt; margin:0 0 4pt;">
+        <strong>Phân loại mức độ tổn thương:</strong>
+        Dựa trên diện tích và cường độ kích hoạt tổn thương trong vùng phổi.
+    </p>
+
+    {# ── DISCLAIMER ── #}
+    <div class="pr-disclaimer">
+        <strong>⚠ TUYÊN BỐ MIỄN TRỪ TRÁCH NHIỆM QUAN TRỌNG:</strong><br>
+        Kết quả này được tạo ra tự động bởi hệ thống AI hỗ trợ và
+        <strong>KHÔNG phải là chẩn đoán y tế chính thức</strong>.
+        Hệ thống AI có thể mắc sai sót; kết quả <em>không</em> thay thế việc thăm khám, đánh giá lâm sàng
+        và chẩn đoán của bác sĩ chuyên khoa có trình độ chuyên môn.
+        Bác sĩ lâm sàng cần tích hợp kết quả này với thông tin lâm sàng đầy đủ trước khi ra quyết định điều trị.
+        Phiếu này chỉ có giá trị tham khảo, <strong>không có giá trị pháp lý y tế</strong>.
+    </div>
+
+    {# ── CHỮ KÝ XÁC NHẬN ── #}
+    <div class="pr-sign-block pr-no-break">
+        <div class="pr-sign-col">
+            <div class="pr-sign-title">Người nhận kết quả</div>
+            <div style="font-size:9pt; color:#555;">(Ký và ghi rõ họ tên)</div>
+            <div class="pr-sign-name">&nbsp;</div>
+        </div>
+        <div class="pr-sign-col">
+            <div class="pr-sign-title">Bác sĩ xem xét / Xác nhận</div>
+            <div style="font-size:9pt; color:#555;">(Ký, ghi rõ họ tên &amp; đóng dấu)</div>
+            <div class="pr-sign-name">&nbsp;</div>
+        </div>
+        <div class="pr-sign-col">
+            <div class="pr-sign-title">Kỹ thuật viên AI / Hệ thống</div>
+            <div style="font-size:9pt; color:#555;">Tự động — PneumoAI Engine</div>
+            <div class="pr-sign-name" style="font-style:normal;">PneumoAI v6<br><span style="font-size:8pt;">{{
+                    diagnosis.created_at.strftime('%d/%m/%Y %H:%M') }}</span></div>
+        </div>
+    </div>
+
+    {# ── FOOTER ── #}
+    <div class="pr-footer-bar">
+        <span>PneumoAI &bull; Hệ thống hỗ trợ chẩn đoán hình ảnh AI &bull; Mã #{{ diagnosis.id }}</span>
+        <span>In lúc: <span id="print-time-footer"></span></span>
+    </div>
+    <div class="pr-watermark">
+        Phiếu này được tạo tự động bởi hệ thống PneumoAI — chỉ có giá trị tham khảo.
+    </div>
+
+</div>{# /print-report #}
+
+{% endblock %}
+
+
+{% block extra_js %}
+<script>
+    (function () {
+        // Render tất cả thanh progress từ data-progress-width
+        // Giá trị được clamp về [0, 100] để tránh overflow khi data bất thường
+        document.querySelectorAll("[data-progress-width]").forEach(function (bar) {
+            var raw = bar.getAttribute("data-progress-width");
+            if (!raw) return;
+            var val = parseFloat(raw);
+            if (isNaN(val)) return;
+            bar.style.width = Math.max(0, Math.min(100, val)) + "%";
+        });
+
+        // Heatmap Overlay Slider
+        var opacitySlider = document.getElementById('heatmapOpacity');
+        var overlayGradcam = document.getElementById('overlayGradcam');
+
+        if (opacitySlider && overlayGradcam) {
+            var applyOverlayOpacity = function () {
+                overlayGradcam.style.opacity = opacitySlider.value;
+            };
+            applyOverlayOpacity();
+            opacitySlider.addEventListener('input', applyOverlayOpacity);
+        }
+
+        // Điền giờ in vào footer phiếu kết quả
+        var printTimeEl = document.getElementById('print-time-footer');
+        if (printTimeEl) {
+            var now = new Date();
+            var pad = function (n) { return n < 10 ? '0' + n : n; };
+            printTimeEl.textContent =
+                pad(now.getDate()) + '/' + pad(now.getMonth() + 1) + '/' + now.getFullYear() +
+                ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+        }
+    })();
+</script>
+{% endblock %}

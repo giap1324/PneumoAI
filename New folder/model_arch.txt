@@ -1,0 +1,263 @@
+﻿=== Cell 22 ===
+from torchvision.models import densenet121, DenseNet121_Weights
+
+class CNNBackbone(nn.Module):
+    """
+    DenseNet121 backbone cß║»t ─æß║┐n denseblock3.
+    Output: 14├ù14├ù896 feature map (vß╗¢i input 224├ù224)
+    """
+    def __init__(self, pretrained=True):
+        super().__init__()
+        densenet = densenet121(
+            weights=DenseNet121_Weights.IMAGENET1K_V1 if pretrained else None
+        )
+        features = densenet.features
+
+        # Giß╗» lß║íi ─æß║┐n hß║┐t denseblock3 (bß╗Å denseblock4 v├á transition3)
+        self.conv0      = features.conv0       # 7├ù7 conv, stride 2
+        self.norm0      = features.norm0
+        self.relu0      = features.relu0
+        self.pool0      = features.pool0       # maxpool stride 2 ΓåÆ 56├ù56
+
+        self.denseblock1  = features.denseblock1   # ΓåÆ 56├ù56, 256 ch
+        self.transition1  = features.transition1   # ΓåÆ 28├ù28, 128 ch
+
+        self.denseblock2  = features.denseblock2   # ΓåÆ 28├ù28, 512 ch
+        self.transition2  = features.transition2   # ΓåÆ 14├ù14, 256 ch
+
+        self.denseblock3  = features.denseblock3   # ΓåÆ 14├ù14, 896 ch
+
+        # DenseNet121: growth_rate=32, block_config=(6,12,24,16)
+        # Sau denseblock3: 256 + 24├ù32 = 256 + 768 = 1024...
+        # Thß╗▒c tß║┐ transition2 output = 256, denseblock3 th├¬m 24├ù32=768 ΓåÆ 1024
+        # Nh╞░ng torchvision t├¡nh transition output = floor(in/2):
+        #   denseblock2 out = 128 + 12├ù32 = 512 ΓåÆ transition2 out = 256
+        #   denseblock3 out = 256 + 24├ù32 = 256 + 768 = 1024
+        self.out_channels = 1024
+
+        self._freeze_early_layers()
+
+    def _freeze_early_layers(self):
+        # Freeze conv0, norm0, denseblock1 (t╞░╞íng ─æ╞░╞íng conv1/bn1/layer1 cß╗ºa ResNet)
+        frozen_modules = (
+            list(self.conv0.parameters()) +
+            list(self.norm0.parameters()) +
+            list(self.denseblock1.parameters())
+        )
+        for param in frozen_modules:
+            param.requires_grad = False
+
+        # Giß╗» nguy├¬n BN stats cß╗ºa c├íc layer frozen
+        for module in [self.norm0] + list(self.denseblock1.modules()):
+            if isinstance(module, nn.BatchNorm2d):
+                module.eval()
+
+    def train(self, mode=True):
+        super().train(mode)
+        # ├ëp BN frozen vß╗ü eval mode sau khi set train mode
+        for module in [self.norm0] + list(self.denseblock1.modules()):
+            if isinstance(module, nn.BatchNorm2d):
+                module.eval()
+        return self
+
+    def forward(self, x):
+        x = self.pool0(self.relu0(self.norm0(self.conv0(x))))  # 56├ù56
+        x = self.transition1(self.denseblock1(x))              # 28├ù28
+        x = self.transition2(self.denseblock2(x))              # 14├ù14
+        x = self.denseblock3(x)                                # 14├ù14, 1024 ch
+        return x
+
+
+class HybridViT(nn.Module):
+    def __init__(self, num_classes=2, embed_dim=512, depth=6, num_heads=4,
+                 mlp_ratio=4, dropout=0.1, attn_dropout=0.1,
+                 drop_path_rate=0.1, pretrained_backbone=True):
+        super().__init__()
+        self.backbone = CNNBackbone(pretrained=pretrained_backbone)
+        self.patch_embed = nn.Sequential(
+            nn.Conv2d(self.backbone.out_channels, embed_dim, kernel_size=1),
+            nn.BatchNorm2d(embed_dim),
+            Rearrange('b c h w -> b (h w) c')
+        )
+        self.num_patches = 14 * 14  # = 196 vß╗¢i input 224├ù224 (kh├┤ng ─æß╗òi)
+        self.cls_token = nn.Parameter(torch.zeros(1, 1, embed_dim))
+        self.pos_embed = nn.Parameter(torch.zeros(1, self.num_patches + 1, embed_dim))
+        self.pos_drop  = nn.Dropout(dropout)
+
+        dpr = [x.item() for x in torch.linspace(0, drop_path_rate, depth)]
+        self.transformer = nn.ModuleList([
+            TransformerBlock(embed_dim, num_heads, mlp_ratio, dropout, attn_dropout, dpr[i])
+            for i in range(depth)
+        ])
+        self.norm = nn.LayerNorm(embed_dim)
+        self.head = nn.Sequential(
+            nn.Linear(embed_dim, embed_dim // 2),
+            nn.GELU(),
+            nn.Dropout(dropout),
+            nn.Linear(embed_dim // 2, num_classes)
+        )
+        self._init_weights()
+
+    # _init_weights v├á forward giß╗» nguy├¬n kh├┤ng ─æß╗òi
+    def _init_weights(self):
+        nn.init.trunc_normal_(self.pos_embed, std=0.02)
+        nn.init.trunc_normal_(self.cls_token, std=0.02)
+        for m in self.modules():
+            if isinstance(m, nn.Linear):
+                nn.init.trunc_normal_(m.weight, std=0.02)
+                if m.bias is not None:
+                    nn.init.zeros_(m.bias)
+            elif isinstance(m, nn.LayerNorm):
+                nn.init.ones_(m.weight)
+                nn.init.zeros_(m.bias)
+
+    def forward(self, x):
+        B = x.shape[0]
+        x = self.backbone(x)                          # (B, 1024, 14, 14)
+        x = self.patch_embed(x)                       # (B, 196, embed_dim)
+        cls_tokens = self.cls_token.expand(B, -1, -1) # (B, 1, embed_dim)
+        x = torch.cat([cls_tokens, x], dim=1)         # (B, 197, embed_dim)
+        x = se
+
+=== Cell 45 ===
+# ============================================================
+# SELECT EXTERNAL DATASET FOLDER (FIXED FOR COLAB)
+# ============================================================
+
+import os
+import torch
+from PIL import Image
+from torchvision import transforms
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score
+)
+
+# ============================================================
+# DEVICE
+# ============================================================
+
+device = torch.device(
+    "cuda" if torch.cuda.is_available() else "cpu"
+)
+
+# ============================================================
+# TRANSFORM
+# ============================================================
+
+transform = transforms.Compose([
+    transforms.Grayscale(num_output_channels=3),
+    transforms.Resize((224,224)),
+    transforms.ToTensor(),
+    transforms.Normalize(
+        mean=[0.485,0.456,0.406],
+        std =[0.229,0.224,0.225]
+    )
+])
+
+# ============================================================
+# LOAD MODEL
+# ============================================================
+
+# Khß╗ƒi tß║ío lß║íi class HybridViT tr╞░ß╗¢c khi load (nß║┐u cß║ºn)
+model = HybridViT().to(device)
+
+checkpoint = torch.load(
+    "hybrid_vit_pneumonia_best_v2.pth",
+    map_location=device,
+    weights_only=False
+)
+
+if "model_state_dict" in checkpoint:
+    model.load_state_dict(checkpoint["model_state_dict"])
+else:
+    model.load_state_dict(checkpoint)
+
+model.eval()
+print("Loaded model successfully.")
+
+# ============================================================
+# CHOOSE FOLDER - FIXED FOR COLAB
+# ============================================================
+
+# Thay ─æß╗òi ─æ╞░ß╗¥ng dß║½n n├áy tß╗¢i th╞░ mß╗Ñc dataset cß╗ºa bß║ín tr├¬n Colab
+dataset_path = "/content/data/chest_xray/test"
+
+if not os.path.exists(dataset_path):
+    print(f"ΓÜá∩╕Å Cß║únh b├ío: ─É╞░ß╗¥ng dß║½n kh├┤ng tß╗ôn tß║íi: {dataset_path}")
+else:
+    print(f"Selected Folder: {dataset_path}")
+
+# ============================================================
+# CLASS LABELS
+# ============================================================
+
+classes = {
+    "NORMAL": 0,
+    "PNEUMONIA": 1
+}
+
+# ============================================================
+# TEST
+# ============================================================
+
+y_true = []
+y_pred = []
+
+with torch.no_grad():
+    for class_name, label in classes.items():
+        class_dir = os.path.join(dataset_path, class_name)
+        if not os.path.exists(class_dir):
+            print(f"Missing folder: {class_dir}")
+            continue
+
+        files = [f for f in os.listdir(class_dir) if f.lower().endswith((".png", ".jpg", ".jpeg"))]
+        for file in files:
+            image_path = os.path.join(class_dir, file)
+            try:
+                image = Image.open(image_path).convert("RGB")
+                input_tensor = transform(image).unsqueeze(0).to(device)
+                output = model(input_tensor)
+                pred = torch.argmax(output, dim=1).item()
+
+                y_true.append(label)
+                y_pred.append(pred)
+            except Exception as e:
+                print(f"Error loading {image_path}: {e}")
+
+# ============================================================
+# METRICS
+# ============================================================
+
+if len(y_true) > 0:
+    acc = accuracy_score(y_true, y_pred)
+    f1 = f1_score(y_true, y_pred)
+    cm = confusion_matrix(y_true, y_pred)
+
+    print("\n" + "="*60)
+    print("EXTERNAL DATASET RESULTS")
+    print("="*60)
+    print(f"Accuracy : {acc*100:.2f}%")
+    print(f"F1 Score : {f1:.4f}")
+    print("\nClassification Report:\n")
+    print(classification_report(y_true, y_pred, target_names=list(classes.keys()), digits=4))
+
+    TN, FP, FN, TP = cm.ravel()
+    print("\n" + "="*60)
+    print("CONFUSION MATRIX")
+    print("="*60)
+    print(f"TN = {TN} | FP = {FP}")
+    print(f"FN = {FN} | TP = {TP}")
+
+    # Clinical Metrics
+    sensitivity = TP / (TP + FN) if (TP+FN) > 0 else 0
+    specificity = TN / (TN + FP) if (TN+FP) > 0 else 0
+    print("\nCLINICAL METRICS")
+    print("="*60)
+    print(f"Sensitivity : {sensitivity*100:.2f}%")
+    print(f"Specificity : {specificity*100:.2f}%")
+else:
+    print("Kh├┤ng t├¼m thß║Ñy dß╗» liß╗çu ─æß╗â ─æ├ính gi├í.")
+

@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Flutter
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+build/
+
+# Android
+.gradle/
+local.properties
+*.iml
+.idea/
+
+# Environment
+.env
+
+# Database
+*.db
+*.sqlite
+
+# Model lớn
+*.pth
+*.pt
+
+# VS Code
+.vscode/

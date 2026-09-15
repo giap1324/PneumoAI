@@ -1,0 +1,363 @@
+{% extends "base.html" %}
+
+{% block title %}Trang chủ - Hệ thống Chẩn đoán Viêm phổi{% endblock %}
+
+{% block content %}
+<section class="landing-page">
+    <div class="container">
+        <div id="vanta-water-bg" style="padding: 3rem; border-radius: 20px; min-height: 80vh;">
+            <div class="row align-items-center g-4 g-xl-5">
+                <div class="col-lg-6">
+                    <span class="hero-badge">
+                        <i class="bi bi-stars me-1"></i>Đề tài Nghiên cứu Khoa học
+                    </span>
+                    <h1 class="hero-title mt-3">
+                        Hệ Thống Phân Loại
+                        <span class="highlight-text">Viêm Phổi</span>
+                        Bằng AI
+                    </h1>
+                    <p class="hero-description">
+                        Ứng dụng kiến trúc <strong>Hybrid Vision Transformer (ViT)</strong> tiên tiến để phát hiện
+                        viêm phổi qua ảnh X-quang ngực, kết hợp Grad-CAM để giải thích quyết định của mô hình.
+                    </p>
+
+                    <div class="hero-actions">
+                        <button type="button" class="btn btn-hero-primary" id="heroUploadBtn">
+                            <i class="bi bi-cloud-upload me-2"></i>Tải Lên Ảnh X-Quang
+                        </button>
+                        <button type="button" class="btn btn-hero-secondary" data-bs-toggle="modal"
+                            data-bs-target="#videoModal">
+                            Video hướng dẫn <i class="bi bi-arrow-right-short"></i>
+                        </button>
+                        <!-- Cửa sổ nổi (Modal) -->
+                        <div class="modal fade" id="videoModal" tabindex="-1" aria-labelledby="videoModalLabel"
+                            aria-hidden="true">
+                            <div class="modal-dialog modal-lg modal-dialog-centered">
+                                <!-- modal-lg giúp ô rộng ra, centered để ở giữa màn hình -->
+                                <div class="modal-content">
+                                    <div class="modal-header">
+                                        <h5 class="modal-title fw-bold" id="videoModalLabel">
+                                            <i class="bi bi-camera-video me-2 text-primary"></i>
+                                            <span class="text-gradient-primary">Video Hướng Dẫn Sử Dụng</span>
+                                        </h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"
+                                            aria-label="Đóng"></button>
+                                    </div>
+                                    <div class="modal-body">
+
+                                        <!-- Code chèn video file -->
+                                        <video width="100%" controls>
+                                            <source src="{{ url_for('static', filename='videos/huong_dan.mp4') }}"
+                                                type="video/mp4">
+                                            Trình duyệt của bạn không hỗ trợ thẻ video.
+                                        </video>
+
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="diagnosis-panel">
+                        <div class="diagnosis-panel-header">
+                            <h5 class="mb-0">Phân Tích Chẩn Đoán</h5>
+                            <button type="button" class="panel-menu-btn" aria-label="Tùy chọn">
+                                <i class="bi bi-three-dots"></i>
+                            </button>
+                        </div>
+
+                        <form action="{{ url_for('upload') }}" method="POST" enctype="multipart/form-data"
+                            id="uploadForm">
+                            <div class="upload-zone modern-upload-zone mb-3" id="dropZone">
+                                <div class="upload-zone-content">
+                                    <div class="upload-icon">
+                                        <i class="bi bi-file-earmark-medical"></i>
+                                    </div>
+                                    <h6>Kéo thả ảnh X-Quang vào đây</h6>
+                                    <p>Hỗ trợ định dạng JPG, JPEG, PNG (tối đa 16MB)</p>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" id="chooseFileBtn"
+                                        style="transition: all 0.3s ease;"
+                                        onmouseover="this.style.background='linear-gradient(45deg, #007bff, #00d2ff)'; this.style.color='white'; this.style.borderColor='transparent';"
+                                        onmouseout="this.style.background=''; this.style.color=''; this.style.borderColor='';">
+                                        Chọn Tệp Từ Máy Tính
+                                    </button>
+                                </div>
+                                <input type="file" name="file" id="fileInput" accept="image/*" class="d-none" required>
+                            </div>
+
+                            <div id="previewContainer" class="mb-3 d-none">
+                                <img id="imagePreview" src="" alt="Preview"
+                                    class="img-fluid rounded-3 shadow-sm preview-image">
+                                <div class="d-flex justify-content-between align-items-center mt-2 gap-2">
+                                    <p id="fileName" class="text-muted mb-0 small text-break"></p>
+                                    <button type="button" class="btn btn-outline-danger btn-sm" id="removeImage">
+                                        <i class="bi bi-x-circle me-1"></i>Xóa ảnh
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="row g-2">
+                                <div class="col-md-5">
+                                    <input type="text" class="form-control form-control-sm" id="patientName"
+                                        name="patient_name" placeholder="Tên bệnh nhân (tùy chọn)">
+                                </div>
+                                <div class="col-md-3">
+                                    <input type="number" class="form-control form-control-sm" id="patientAge"
+                                        name="patient_age" placeholder="Tuổi (tùy chọn)" min="0" max="150">
+                                </div>
+                                <div class="col-md-4">
+                                    <select class="form-select form-select-sm" id="patientGender" name="patient_gender">
+                                        <option value="" selected disabled hidden>Giới tính (tùy chọn)</option>
+                                        <option value="Nam">Nam</option>
+                                        <option value="Nữ">Nữ</option>
+                                        <option value="Khác">Khác</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="d-grid mt-3">
+                                <button type="submit" class="btn btn-primary" id="submitBtn" disabled>
+                                    <i class="bi bi-search me-2"></i>Phân Tích Ảnh X-Quang
+                                </button>
+                            </div>
+                        </form>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <section class="core-tech-section">
+            <div class="core-tech-header text-center">
+                <span class="core-tech-kicker">KIẾN TRÚC CỐT LÕI</span>
+                <h2>Công Nghệ Đằng Sau<br>Độ Chính Xác Cao</h2>
+                <p>
+                    Hệ thống sử dụng sự kết hợp giữa kiến trúc CNN truyền thống và Vision Transformer
+                    hiện đại, mang lại khả năng nhận biết cả đặc trưng cục bộ và ngữ cảnh toàn cục của phổi.
+                </p>
+            </div>
+
+            <div class="row g-4 justify-content-center core-tech-grid">
+                <div class="col-md-6">
+                    <article class="core-tech-card core-tech-card-pink">
+                        <div class="core-tech-icon icon-pink">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+                        <h5>Hybrid Vision Transformer</h5>
+                        <p>
+                            Mô hình Hybrid ViT kết hợp trích xuất đặc trưng bằng CNN và khả năng học quan hệ
+                            dài hạn của Transformer, từ đó cải thiện hiệu quả phân loại trong chẩn đoán ảnh X-quang.
+                        </p>
+                        <ul class="core-tech-list">
+                            <li><i class="bi bi-check2"></i>Trích xuất đặc trưng cục bộ bằng ResNet backbone.</li>
+                            <li><i class="bi bi-check2"></i>Học ngữ cảnh toàn cục qua Transformer Encoder.</li>
+                        </ul>
+                    </article>
+                </div>
+
+                <div class="col-md-6">
+                    <article class="core-tech-card core-tech-card-green">
+                        <div class="core-tech-icon icon-green">
+                            <i class="bi bi-eye"></i>
+                        </div>
+                        <h5>Giải Thích Mô Hình (Grad-CAM)</h5>
+                        <p>
+                            Grad-CAM hiển thị vùng ảnh có ảnh hưởng cao đến quyết định của AI, giúp bác sĩ
+                            dễ kiểm chứng và tăng mức độ tin cậy khi sử dụng hệ thống.
+                        </p>
+                        <div class="gradcam-preview">
+
+                            <!-- Ảnh gốc -->
+                            <div class="preview-card">
+                                <img src="{{ url_for('static', filename='images/X_quang.png') }}" alt="Ảnh X-quang">
+
+                                <div class="preview-label">
+                                    Ảnh Gốc
+                                </div>
+                            </div>
+
+                            <!-- Grad-CAM -->
+                            <div class="preview-card">
+                                <img src="{{ url_for('static', filename='images/GradCam.png') }}" alt="Grad-CAM">
+
+                                <div class="preview-label heatmap-label">
+                                    Grad-CAM Heatmap
+                                </div>
+                            </div>
+
+                        </div>
+                    </article>
+                </div>
+            </div>
+        </section>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const dropZone = document.getElementById('dropZone');
+        const fileInput = document.getElementById('fileInput');
+        const previewContainer = document.getElementById('previewContainer');
+        const imagePreview = document.getElementById('imagePreview');
+        const fileName = document.getElementById('fileName');
+        const removeImage = document.getElementById('removeImage');
+        const submitBtn = document.getElementById('submitBtn');
+        const uploadForm = document.getElementById('uploadForm');
+        const chooseFileBtn = document.getElementById('chooseFileBtn');
+        const heroUploadBtn = document.getElementById('heroUploadBtn');
+
+        dropZone.addEventListener('click', (e) => {
+            if (e.target.closest('#chooseFileBtn')) return;
+            fileInput.click();
+        });
+
+        chooseFileBtn.addEventListener('click', () => fileInput.click());
+        heroUploadBtn.addEventListener('click', () => {
+            dropZone.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            fileInput.click();
+        });
+
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.add('dragover'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropZone.addEventListener(eventName, () => dropZone.classList.remove('dragover'), false);
+        });
+
+        dropZone.addEventListener('drop', function (e) {
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                fileInput.files = files;
+                handleFile(files[0]);
+            }
+        });
+
+        fileInput.addEventListener('change', function () {
+            if (this.files.length > 0) {
+                handleFile(this.files[0]);
+            }
+        });
+
+        function handleFile(file) {
+            if (!file.type.startsWith('image/')) {
+                showErrorModal(
+                    'Định dạng tệp không hợp lệ',
+                    'Vui lòng chọn tệp ảnh (JPG, JPEG hoặc PNG).',
+                    'warning'
+                );
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                imagePreview.src = e.target.result;
+                fileName.textContent = file.name;
+                dropZone.classList.add('d-none');
+                previewContainer.classList.remove('d-none');
+                submitBtn.disabled = false;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        removeImage.addEventListener('click', function () {
+            fileInput.value = '';
+            imagePreview.src = '';
+            fileName.textContent = '';
+            dropZone.classList.remove('d-none');
+            previewContainer.classList.add('d-none');
+            submitBtn.disabled = true;
+        });
+
+        uploadForm.addEventListener('submit', function (e) {
+            e.preventDefault();
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang phân tích...';
+            submitBtn.disabled = true;
+            const resetSubmitState = function () {
+                submitBtn.innerHTML = '<i class="bi bi-search me-2"></i>Phân Tích Ảnh X-Quang';
+                submitBtn.disabled = false;
+            };
+
+            const formData = new FormData(uploadForm);
+
+            fetch('{{ url_for("api_predict") }}', {
+                method: 'POST',
+                body: formData
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.diagnosis_id) {
+                        window.location.href = '{{ url_for("result", diagnosis_id=0) }}'.replace('0', data.diagnosis_id);
+                    } else {
+                        let errorTitle = 'Lỗi phân tích ảnh';
+                        let errorMessage = 'Không thể phân tích ảnh của bạn.';
+                        let errorType = 'error';
+                        const flags = new Set(data.validation_flags || []);
+
+                        if (data.error_code === 'invalid_xray') {
+                            errorTitle = 'Ảnh không hợp lệ';
+                            if (flags.has('grayscale')) {
+                                errorMessage = 'Ảnh có vẻ không phải X-quang. Vui lòng kiểm tra lại định dạng.';
+                            } else if (flags.has('Histogram')) {
+                                errorMessage = 'Ảnh có độ tương phản hoặc sáng không phù hợp. Vui lòng tải ảnh khác.';
+                            } else if (flags.has('Grad-CAM')) {
+                                errorMessage = 'Ảnh không chứa các đặc trưng để mô hình nhận diện. Vui lòng tải ảnh X-quang ngực rõ hơn.';
+                            } else {
+                                errorMessage = 'Ảnh không đạt yêu cầu chất lượng. Vui lòng tải ảnh X-quang ngực khác.';
+                            }
+                            errorType = 'warning';
+                        } else if (data.error?.includes('Invalid file format')) {
+                            errorTitle = 'Định dạng tệp không hợp lệ';
+                            errorMessage = 'Vui lòng tải lên file ảnh (JPG, PNG).';
+                        } else if (data.error?.includes('Cannot preprocess')) {
+                            errorTitle = 'Lỗi xử lý ảnh';
+                            errorMessage = 'Không thể đọc file ảnh. Hãy thử file khác.';
+                        } else if (data.success && !data.diagnosis_id) {
+                            errorTitle = 'Thiếu dữ liệu kết quả';
+                            errorMessage = 'Phân tích đã hoàn tất nhưng không nhận được mã kết quả.';
+                        }
+
+                        showErrorModal(errorTitle, errorMessage, errorType, data.error, function () {
+                            resetSubmitState();
+                        });
+                        resetSubmitState();
+                    }
+                })
+                .catch(error => {
+                    showErrorModal('Lỗi mạng', 'Không thể kết nối đến máy chủ. Vui lòng thử lại.', 'error', error.message, function () {
+                        resetSubmitState();
+                    });
+                    resetSubmitState();
+                });
+        });
+    });
+    VANTA.WAVES({
+        el: "#vanta-water-bg", // Khớp với ID ở trên
+        mouseControls: true,
+        touchControls: true,
+        gyroControls: false,
+        minHeight: 200.00,
+        minWidth: 200.00,
+        scale: 1.00,
+        scaleMobile: 1.00,
+        color: 0x8ec5e6, // Màu xanh của nước biển trong
+        shininess: 35.00,
+        waveHeight: 12.50, // Độ cao của sóng
+        waveSpeed: 0.80, // Tốc độ sóng cuộn
+        zoom: 0.85
+    })
+</script>
+{% endblock %}

@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block title %}Lịch sử Chẩn đoán - PneumoAI{% endblock %}
+
+{% block content %}
+<div class="history-page">
+    <!-- Hero Section -->
+    <div class="history-hero">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="history-hero-title">Lịch sử Chẩn đoán</h1>
+                    <p class="history-hero-subtitle">Xem lại tất cả các chẩn đoán X-quang đã thực hiện</p>
+                </div>
+                <div class="col-lg-4 text-lg-end">
+                    <a href="{{ url_for('index') }}" class="btn history-btn-new">
+                        <i class="bi bi-plus-circle me-2"></i>Chẩn đoán mới
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="container">
+        <div class="history-stats-grid">
+            <div class="history-stat-card history-stat-primary">
+                <div class="history-stat-icon">
+                    <i class="bi bi-clipboard2-pulse"></i>
+                </div>
+                <div class="history-stat-content">
+                    <div class="history-stat-value">{{ diagnoses.total }}</div>
+                    <div class="history-stat-label">Tổng chẩn đoán</div>
+                </div>
+            </div>
+
+            <div class="history-stat-card history-stat-success">
+                <div class="history-stat-icon">
+                    <i class="bi bi-check-circle-fill"></i>
+                </div>
+                <div class="history-stat-content">
+                    <div class="history-stat-value" id="normalCount">-</div>
+                    <div class="history-stat-label">Bình thường</div>
+                </div>
+            </div>
+
+            <div class="history-stat-card history-stat-danger">
+                <div class="history-stat-icon">
+                    <i class="bi bi-exclamation-circle-fill"></i>
+                </div>
+                <div class="history-stat-content">
+                    <div class="history-stat-value" id="pneumoniaCount">-</div>
+                    <div class="history-stat-label">Viêm phổi</div>
+                </div>
+            </div>
+
+            <div class="history-stat-card history-stat-info">
+                <div class="history-stat-icon">
+                    <i class="bi bi-percent"></i>
+                </div>
+                <div class="history-stat-content">
+                    <div class="history-stat-value" id="avgConfidence">-</div>
+                    <div class="history-stat-label">Độ tin cậy TB</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Diagnosis List -->
+        {% if diagnoses.items %}
+        <div class="history-table-wrapper">
+            <table class="history-table">
+                <thead>
+                    <tr>
+                        <th width="50">ID</th>
+                        <th width="70">Ảnh</th>
+                        <th>Bệnh nhân</th>
+                        <th>Kết quả</th>
+                        <th width="140">Độ tin cậy</th>
+                        <th width="140">Thời gian</th>
+                        <th width="130">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in diagnoses.items %}
+                    <tr class="history-table-row">
+                        <td class="history-td-id"><strong>#{{ item.id }}</strong></td>
+                        <td class="history-td-image">
+                            <img src="{{ url_for('static', filename='uploads/' + item.filename) }}" alt="X-ray"
+                                class="history-thumbnail" width="50" height="50">
+                        </td>
+                        <td>
+                            {% if item.patient_name or item.patient_age %}
+                            {% if item.patient_name %}
+                            <span class="history-patient-name">{{ item.patient_name }}</span>
+                            {% endif %}
+                            {% if item.patient_age %}
+                            <div class="small text-muted">{{ item.patient_age }} tuổi</div>
+                            {% endif %}
+                            {% else %}
+                            <span class="history-patient-empty">Không có</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% set is_pneumonia = item.prediction == 'PNEUMONIA' or item.prediction == 'Viêm phổi' or
+                            item.prediction_vi == 'Viêm phổi' %}
+                            {% if is_pneumonia %}
+                            <span class="history-badge history-badge-danger">
+                                <i class="bi bi-exclamation-circle-fill me-1"></i>{{ item.prediction }}
+                            </span>
+                            {% else %}
+                            <span class="history-badge history-badge-success">
+                                <i class="bi bi-check-circle-fill me-1"></i>{{ item.prediction }}
+                            </span>
+                            {% endif %}
+                            {% if item.gradcam_path %}
+                            <div class="mt-1">
+                                <span class="badge rounded-pill text-bg-info">
+                                    <i class="bi bi-eye me-1"></i>Grad-CAM
+                                </span>
+                            </div>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="history-confidence">
+                                <div class="history-progress-bar">
+                                    <div class="history-progress-fill diagnosis-confidence-bar {% if is_pneumonia %}bg-danger{% else %}bg-success{% endif %}"
+                                        data-confidence="{{ item.confidence }}" style="width: 0%">
+                                    </div>
+                                </div>
+                                <span class="history-confidence-text">{{ "%.1f"|format(item.confidence) }}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="history-datetime">
+                                <div class="history-date">{{ item.created_at.strftime('%d/%m/%Y') }}</div>
+                                <div class="history-time">{{ item.created_at.strftime('%H:%M') }}</div>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="history-actions">
+                                <a href="{{ url_for('result', diagnosis_id=item.id) }}"
+                                    class="history-action-btn history-action-view" title="Xem chi tiết">
+                                    <i class="bi bi-eye"></i>
+                                </a>
+                                <button class="history-action-btn history-action-delete js-delete-btn"
+                                    data-diagnosis-id="{{ item.id }}" title="Xóa">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if diagnoses.pages > 1 %}
+        <nav class="history-pagination">
+            <ul class="pagination">
+                {% if diagnoses.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('history', page=diagnoses.prev_num) }}"
+                        aria-label="Trang trước">
+                        <i class="bi bi-chevron-left"></i>
+                    </a>
+                </li>
+                {% endif %}
+
+                {% for p in diagnoses.iter_pages() %}
+                {% if p %}
+                <li class="page-item {% if p == diagnoses.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('history', page=p) }}">{{ p }}</a>
+                </li>
+                {% else %}
+                <li class="page-item disabled"><span class="page-link">...</span></li>
+                {% endif %}
+                {% endfor %}
+
+                {% if diagnoses.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('history', page=diagnoses.next_num) }}"
+                        aria-label="Trang sau">
+                        <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+        </nav>
+        {% endif %}
+
+        {% else %}
+        <!-- Empty State -->
+        <div class="history-empty">
+            <div class="history-empty-icon">
+                <i class="bi bi-inbox"></i>
+            </div>
+            <h3 class="history-empty-title">Chưa có chẩn đoán nào</h3>
+            <p class="history-empty-subtitle">Bắt đầu bằng cách tải lên một ảnh X-quang để phân tích</p>
+            <a href="{{ url_for('index') }}" class="btn history-btn-new">
+                <i class="bi bi-plus-circle me-2"></i>Chẩn đoán ngay
+            </a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content history-delete-modal">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-exclamation-triangle me-2"></i>Xác nhận xóa
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Bạn có chắc chắn muốn xóa chẩn đoán này?</p>
+                <p class="text-muted small mb-0">Hành động này không thể hoàn tác.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                <a href="#" id="deleteBtn" class="btn btn-danger">Xóa</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    // Load stats
+    fetch('{{ url_for("api_stats") }}')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('normalCount').textContent = data.normal_count ?? data.normal ?? 0;
+            document.getElementById('pneumoniaCount').textContent = data.pneumonia_count ?? data.pneumonia ?? 0;
+            document.getElementById('avgConfidence').textContent =
+                data.avg_confidence ? data.avg_confidence.toFixed(1) + '%' : '-';
+        });
+
+    document.querySelectorAll('.diagnosis-confidence-bar').forEach((bar) => {
+        const confidence = Math.max(0, Math.min(100, parseFloat(bar.dataset.confidence || '0')));
+        bar.style.width = confidence + '%';
+    });
+
+    document.querySelectorAll('.js-delete-btn').forEach((button) => {
+        button.addEventListener('click', () => {
+            confirmDelete(button.dataset.diagnosisId);
+        });
+    });
+
+    // Delete confirmation
+    function confirmDelete(id) {
+        document.getElementById('deleteBtn').href = '/delete/' + id;
+        new bootstrap.Modal(document.getElementById('deleteModal')).show();
+    }
+</script>
+{% endblock %}

@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Hệ thống Chẩn đoán Viêm phổi{% endblock %}</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Custom CSS -->
+    <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename='logo.png') }}?v=1">
+    
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+    <!-- Navbar -->
+   <nav class="navbar navbar-expand-lg navbar-light navbar-pro sticky-top">
+        <div class="container">
+            <a class="navbar-brand d-flex align-items-center" href="{{ url_for('index') }}">
+                <img src="{{ url_for('static', filename='logo.png') }}" alt="PneumoAI Logo" class="navbar-logo me-2">
+                <span class="brand-text-wrap">
+                    <span class="brand-title">Pneumo<span>AI</span></span>
+                    <small class="brand-subtitle">AI Chest X-Ray Diagnosis</small>
+                </span>
+            </a>
+            <button class="navbar-toggler navbar-toggler-clean" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto align-items-lg-center gap-lg-2">
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-pro {% if request.endpoint == 'index' %}active{% endif %}" href="{{ url_for('index') }}">
+                            <i class="bi bi-house-door me-1"></i>Trang chủ
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-pro {% if request.endpoint == 'history' %}active{% endif %}" href="{{ url_for('history') }}">
+                            <i class="bi bi-clock-history me-1"></i>Lịch sử
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link nav-link-pro {% if request.endpoint == 'about' %}active{% endif %}" href="{{ url_for('about') }}">
+                            <i class="bi bi-info-circle me-1"></i>Giới thiệu
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    <div class="container mt-3">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-stack">
+                    {% for category, message in messages %}
+                        {% set tone = 'danger' if category in ['error', 'danger'] else ('success' if category == 'success' else ('warning' if category == 'warning' else 'info')) %}
+                        <div class="alert pro-alert pro-alert-{{ tone }} alert-dismissible fade show" role="alert">
+                            <div class="pro-alert-icon">
+                                {% if tone == 'danger' %}
+                                    <i class="bi bi-x-circle-fill"></i>
+                                {% elif tone == 'success' %}
+                                    <i class="bi bi-check-circle-fill"></i>
+                                {% elif tone == 'warning' %}
+                                    <i class="bi bi-exclamation-triangle-fill"></i>
+                                {% else %}
+                                    <i class="bi bi-info-circle-fill"></i>
+                                {% endif %}
+                            </div>
+                            <div class="pro-alert-content">{{ message }}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+    </div>
+
+    <!-- Main Content -->
+    <main class="py-4">
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer footer-dark mt-auto py-5">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-lg-4 col-md-6">
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="{{ url_for('static', filename='logo.png') }}" alt="PneumoAI Logo" height="36" class="me-2">
+                        <h5 class="mb-0 text-white fw-bold">PneumoAI</h5>
+                    </div>
+                    <p class="footer-text mb-3">
+                        Nền tảng hỗ trợ phát hiện viêm phổi từ ảnh X-quang bằng mô hình AI Hybrid ViT,
+                        giúp bác sĩ tham khảo kết quả nhanh và trực quan.
+                    </p>
+                    <a href="https://github.com" target="_blank" rel="noopener noreferrer" class="footer-social" aria-label="GitHub">
+                        <i class="bi bi-github"></i>
+                        <span>GitHub</span>
+                    </a>
+
+                   <div class="footer-school mt-3" style="cursor: pointer;" onclick="window.open('https://dainam.edu.vn/vi/khoa/khoa-cong-nghe-thong-tin', '_blank')">
+                    <div class="footer-school-head">
+            <img
+            src="{{ url_for('static', filename='dainam_logo.png') }}"
+            alt="Logo Trường Đại học Đại Nam"
+            class="footer-school-logo"
+        >
+        <div>
+            <div class="footer-school-title">Trường Đại học Đại Nam</div>
+            <div class="footer-school-subtitle">Khoa Công nghệ Thông tin</div>
+        </div>
+    </div>
+    <p class="footer-school-text mb-0">
+        Nền tảng này được nghiên cứu và phát triển bởi sinh viên, nhằm ứng dụng AI vào chẩn đoán hình ảnh y tế.
+    </p>
+</div>
+                </div>
+
+                <div class="col-lg-2 col-md-6">
+                    <h6 class="footer-heading">Điều hướng</h6>
+                    <ul class="footer-list">
+                        <li><a href="{{ url_for('index') }}">Trang chủ</a></li>
+                        <li><a href="{{ url_for('history') }}">Lịch sử</a></li>
+                        <li><a href="{{ url_for('about') }}">Giới thiệu</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <h6 class="footer-heading">Tính năng chính</h6>
+                    <ul class="footer-list">
+                        <li>Phân loại Normal/Pneumonia</li>
+                        <li>Trực quan Grad-CAM vùng tổn thương</li>
+                        <li>Lưu lịch sử và thống kê kết quả</li>
+                    </ul>
+                </div>
+
+                <div class="col-lg-3 col-md-6">
+                    <h6 class="footer-heading">Liên hệ</h6>
+                    <ul class="footer-list">
+                        <li><i class="bi bi-envelope me-2"></i>support@pneumoai.local</li>
+                        <li><i class="bi bi-shield-check me-2"></i>Bảo mật dữ liệu y tế</li>
+                        <li><i class="bi bi-cpu me-2"></i>Hybrid ViT Engine</li>
+                    </ul>
+                </div>
+            </div>
+            <hr class="footer-divider">
+            <div class="d-flex flex-column flex-md-row justify-content-between align-items-center gap-2">
+                <small class="footer-copy">© 2026 PneumoAI. All rights reserved.</small>
+                <small class="footer-copy">Made for medical AI diagnosis support</small>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Error Modal -->
+    <div class="error-modal-overlay" id="errorModalOverlay">
+        <div class="error-modal" id="errorModal">
+            <div class="error-modal-header">
+                <div class="error-icon-wrapper error" id="errorIconWrapper">
+                    <i class="bi bi-exclamation-circle" id="errorIcon"></i>
+                </div>
+                <h5 class="error-modal-title" id="errorModalTitle">Lỗi</h5>
+            </div>
+            <div class="error-modal-content">
+                <p class="error-message-text" id="errorMessage"></p>
+                <div class="error-details d-none" id="errorDetails"></div>
+            </div>
+            <div class="error-modal-footer">
+                <button type="button" class="error-modal-btn error-modal-btn-secondary" id="errorBtnCancel" onclick="closeErrorModal()">
+                    Đóng
+                </button>
+                <button type="button" class="error-modal-btn error-modal-btn-primary d-none" id="errorBtnRetry">
+                    <i class="bi bi-arrow-clockwise"></i>Thử lại
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    // Error Modal Management
+    function showErrorModal(title, message, type = 'error', details = null, retryCallback = null) {
+        const overlay = document.getElementById('errorModalOverlay');
+        const titleEl = document.getElementById('errorModalTitle');
+        const messageEl = document.getElementById('errorMessage');
+        const detailsEl = document.getElementById('errorDetails');
+        const iconWrapper = document.getElementById('errorIconWrapper');
+        const icon = document.getElementById('errorIcon');
+        const retryBtn = document.getElementById('errorBtnRetry');
+
+        // Set title and message
+        titleEl.textContent = title;
+        messageEl.textContent = message;
+
+        // Set icon and color based on type
+        iconWrapper.className = 'error-icon-wrapper ' + type;
+        const iconMap = {
+            'error': 'bi-exclamation-circle',
+            'warning': 'bi-exclamation-triangle',
+            'info': 'bi-info-circle'
+        };
+        icon.className = 'bi ' + (iconMap[type] || 'bi-exclamation-circle');
+
+        // Handle details
+        if (details) {
+            detailsEl.textContent = details;
+            detailsEl.classList.remove('d-none');
+        } else {
+            detailsEl.classList.add('d-none');
+        }
+
+        // Handle retry button
+        if (retryCallback) {
+            retryBtn.classList.remove('d-none');
+            retryBtn.onclick = function() {
+                closeErrorModal();
+                retryCallback();
+            };
+        } else {
+            retryBtn.classList.add('d-none');
+        }
+
+        overlay.classList.add('show');
+    }
+
+    function closeErrorModal() {
+        const overlay = document.getElementById('errorModalOverlay');
+        overlay.classList.remove('show');
+    }
+
+    // Close on background click
+    document.getElementById('errorModalOverlay')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeErrorModal();
+        }
+    });
+
+    (function () {
+        let isInternalNavigation = false;
+
+        function isModifiedClick(event) {
+            return event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0;
+        }
+
+        document.addEventListener('click', function (event) {
+            const anchor = event.target.closest('a[href]');
+            if (!anchor || isModifiedClick(event) || anchor.target === '_blank' || anchor.hasAttribute('download')) {
+                return;
+            }
+
+            const destination = new URL(anchor.href, window.location.href);
+            if (destination.origin === window.location.origin) {
+                isInternalNavigation = true;
+            }
+        }, true);
+
+        document.addEventListener('submit', function () {
+            isInternalNavigation = true;
+        }, true);
+
+        window.addEventListener('pagehide', function (event) {
+            if (event.persisted || isInternalNavigation) {
+                isInternalNavigation = false;
+                return;
+            }
+            navigator.sendBeacon('{{ url_for("clear_history_on_exit") }}');
+        });
+    })();
+    </script>
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+
+{% block title %}Giới thiệu - PneumoAI{% endblock %}
+
+{% block content %}
+<section class="landing-page about-page">
+    <div class="container">
+        <div class="row align-items-center g-4 g-xl-5 about-hero">
+            <div class="col-lg-7">
+                <span class="hero-badge">
+                    <i class="bi bi-stars me-1"></i>Nền tảng chẩn đoán hỗ trợ bác sĩ
+                </span>
+               <h1 class="hero-title mt-3">
+    Giới thiệu về 
+    <span style="background: linear-gradient(90deg, #007bff, #6610f2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-weight: bold;">
+        PneumoAI
+    </span>
+</h1>
+                <p class="hero-description">
+                    PneumoAI là hệ thống phân tích ảnh X-quang ngực ứng dụng AI hiện đại để hỗ trợ sàng lọc
+                    viêm phổi nhanh, trực quan và đáng tin cậy hơn trong quy trình lâm sàng.
+                </p>
+                <div class="hero-actions">
+                    <a href="{{ url_for('index') }}" class="btn btn-hero-primary">
+                        <i class="bi bi-cloud-upload me-2"></i>Chẩn đoán ngay
+                    </a>
+                    <a href="#about-workflow" class="btn btn-hero-secondary">
+                        Xem quy trình <i class="bi bi-arrow-right-short"></i>
+                    </a>
+                </div>
+                <div class="hero-stats about-hero-stats">
+                    <div class="hero-stat-item">
+                        <div class="hero-stat-value">98%</div>
+                        <div class="hero-stat-label">Độ chính xác</div>
+                    </div>
+                    <div class="hero-stat-item">
+                        <div class="hero-stat-value">&lt;2s</div>
+                        <div class="hero-stat-label">Thời gian phản hồi</div>
+                    </div>
+                    <div class="hero-stat-item">
+                        <div class="hero-stat-value">Hybrid ViT</div>
+                        <div class="hero-stat-label">Mô hình lõi</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-lg-5">
+                <div class="about-highlight-card">
+                    <h5 class="about-highlight-title">
+                        <i class="bi bi-shield-check me-2"></i>Điểm nổi bật
+                    </h5>
+                    <ul class="about-checklist">
+                        <li><i class="bi bi-check2-circle"></i>Kiểm tra chất lượng ảnh trước khi suy luận.</li>
+                        <li><i class="bi bi-check2-circle"></i>Giải thích dự đoán bằng Grad-CAM theo vùng phổi.</li>
+                        <li><i class="bi bi-check2-circle"></i>Lưu trữ kết quả và tra cứu lịch sử chẩn đoán.</li>
+                        <li><i class="bi bi-check2-circle"></i>Giao diện tối ưu cho quy trình sử dụng thực tế.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <section class="about-section">
+            <div class="about-section-head text-center">
+                <span class="core-tech-kicker">NĂNG LỰC HỆ THỐNG</span>
+                <h2>Các khối chức năng chính</h2>
+                <p>Được thiết kế theo hướng rõ ràng, dễ vận hành và minh bạch trong hỗ trợ quyết định.</p>
+            </div>
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <article class="about-feature-card">
+                        <div class="about-feature-icon icon-blue">
+                            <i class="bi bi-cpu"></i>
+                        </div>
+                        <h5>Hybrid Vision Transformer</h5>
+                        <p>Kết hợp CNN và Transformer để cân bằng đặc trưng cục bộ và ngữ cảnh toàn cục.</p>
+                    </article>
+                </div>
+                <div class="col-md-4">
+                    <article class="about-feature-card">
+                        <div class="about-feature-icon icon-red">
+                            <i class="bi bi-eye"></i>
+                        </div>
+                        <h5>Grad-CAM Explainability</h5>
+                        <p>Hiển thị vùng ảnh tác động mạnh nhất đến quyết định, tăng khả năng kiểm chứng.</p>
+                    </article>
+                </div>
+                <div class="col-md-4">
+                    <article class="about-feature-card">
+                        <div class="about-feature-icon icon-green">
+                            <i class="bi bi-clipboard-data"></i>
+                        </div>
+                        <h5>Báo cáo trực quan</h5>
+                        <p>Trình bày xác suất và thông tin theo dõi trên cùng một giao diện.</p>
+                    </article>
+                </div>
+            </div>
+        </section>
+
+        <section class="about-section">
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="about-spec-card h-100">
+                        <h5><i class="bi bi-sliders2 me-2"></i>Thông số mô hình</h5>
+                        <div class="about-spec-list">
+                            <div class="about-spec-row"><span>Tên mô hình</span><strong>Hybrid Vision Transformer</strong></div>
+                            <div class="about-spec-row"><span>Backbone</span><strong>DenseNet121 (đến denseblock3)</strong></div>
+                            <div class="about-spec-row"><span>Transformer</span><strong>6 layers, 4 heads</strong></div>
+                            <div class="about-spec-row"><span>Embedding dim</span><strong>512</strong></div>
+                            <div class="about-spec-row"><span>Kích thước input</span><strong>224 x 224</strong></div>
+                            <div class="about-spec-row"><span>Phân loại</span><strong>Normal / Pneumonia</strong></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="about-spec-card h-100">
+                        <h5><i class="bi bi-activity me-2"></i>Diễn giải Grad-CAM</h5>
+                        <p class="about-spec-text">
+                            Grad-CAM làm nổi bật vùng kích hoạt theo gradient để giúp người dùng kiểm chứng
+                            quyết định của mô hình trực quan hơn.
+                        </p>
+                        <div class="about-metric-grid">
+                            <div class="about-metric">
+                                <span class="dot dot-hot"></span>
+                                <div>
+                                    <strong>Đỏ / Vàng</strong>
+                                    <small>Ảnh hưởng cao</small>
+                                </div>
+                            </div>
+                            <div class="about-metric">
+                                <span class="dot dot-mid"></span>
+                                <div>
+                                    <strong>Cam / Lục</strong>
+                                    <small>Ảnh hưởng trung bình</small>
+                                </div>
+                            </div>
+                            <div class="about-metric">
+                                <span class="dot dot-cold"></span>
+                                <div>
+                                    <strong>Xanh dương</strong>
+                                    <small>Ảnh hưởng thấp</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="about-section" id="about-workflow">
+            <div class="about-section-head text-center">
+                <span class="core-tech-kicker">QUY TRÌNH SỬ DỤNG</span>
+                <h2>Cách vận hành trong 4 bước</h2>
+            </div>
+            <div class="about-step-list">
+                <article class="about-step">
+                    <span class="step-number">1</span>
+                    <div>
+                        <h6>Tải ảnh X-quang ngực</h6>
+                        <p>Kéo thả hoặc chọn file PNG/JPG/JPEG từ thiết bị.</p>
+                    </div>
+                </article>
+                <article class="about-step">
+                    <span class="step-number">2</span>
+                    <div>
+                        <h6>Kiểm tra chất lượng ảnh</h6>
+                        <p>Hệ thống tự động kiểm tra grayscale và histogram trước khi suy luận.</p>
+                    </div>
+                </article>
+                <article class="about-step">
+                    <span class="step-number">3</span>
+                    <div>
+                        <h6>Phân tích AI</h6>
+                        <p>Mô hình Hybrid ViT dự đoán nhãn và xác suất trong thời gian ngắn.</p>
+                    </div>
+                </article>
+                <article class="about-step">
+                    <span class="step-number">4</span>
+                    <div>
+                        <h6>Xem kết quả trực quan</h6>
+                        <p>Nhận báo cáo gồm chẩn đoán, độ tin cậy và heatmap Grad-CAM.</p>
+                    </div>
+                </article>
+            </div>
+        </section>
+
+        <section class="about-section">
+            <div class="about-section-head text-center">
+                <span class="core-tech-kicker">TECH STACK</span>
+                <h2>Công nghệ sử dụng</h2>
+            </div>
+            <div class="about-stack-grid">
+                <div class="about-stack-item"><i class="bi bi-filetype-py"></i><span>Python</span></div>
+                <div class="about-stack-item"><i class="bi bi-lightning-charge"></i><span>PyTorch</span></div>
+                <div class="about-stack-item"><i class="bi bi-window"></i><span>Flask</span></div>
+                <div class="about-stack-item"><i class="bi bi-bootstrap"></i><span>Bootstrap</span></div>
+                <div class="about-stack-item"><i class="bi bi-database"></i><span>MySQL</span></div>
+                <div class="about-stack-item"><i class="bi bi-thermometer-high"></i><span>Grad-CAM</span></div>
+            </div>
+        </section>
+
+        <div class="about-disclaimer">
+            <h5><i class="bi bi-exclamation-triangle-fill me-2"></i>Lưu ý quan trọng</h5>
+            <p class="mb-0">
+                Kết quả từ hệ thống chỉ mang tính <strong>hỗ trợ tham khảo</strong> và không thay thế chẩn đoán
+                chuyên môn của bác sĩ. Quyết định điều trị cần được thực hiện bởi nhân sự y tế có thẩm quyền.
+            </p>
+        </div>
+    </div>
+</section>
+{% endblock %}

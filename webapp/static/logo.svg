@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Background circle -->
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00A8E8;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0066CC;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="xrayGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#00D4FF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#0099FF;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Main circle background -->
+  <circle cx="100" cy="100" r="95" fill="url(#bgGradient)" />
+  
+  <!-- Lung shape - left -->
+  <path d="M 50 80 Q 40 80 35 90 Q 30 100 35 110 Q 40 120 50 120 L 50 80" 
+        fill="none" stroke="#00D4FF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity="0.3"/>
+  
+  <!-- Lung shape - right -->
+  <path d="M 150 80 Q 160 80 165 90 Q 170 100 165 110 Q 160 120 150 120 L 150 80" 
+        fill="none" stroke="#00D4FF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round" opacity="0.3"/>
+  
+  <!-- X-ray chest box -->
+  <rect x="65" y="75" width="70" height="60" rx="8" fill="none" stroke="white" stroke-width="3"/>
+  
+  <!-- X-ray ribs - left side -->
+  <path d="M 90 80 Q 75 90 80 100" fill="none" stroke="url(#xrayGradient)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 90 88 Q 72 98 78 110" fill="none" stroke="url(#xrayGradient)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 90 96 Q 75 105 85 125" fill="none" stroke="url(#xrayGradient)" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- X-ray center spine -->
+  <line x1="100" y1="75" x2="100" y2="135" stroke="url(#xrayGradient)" stroke-width="5" stroke-linecap="round"/>
+  
+  <!-- X-ray ribs - right side -->
+  <path d="M 110 80 Q 125 90 120 100" fill="none" stroke="url(#xrayGradient)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 110 88 Q 128 98 122 110" fill="none" stroke="url(#xrayGradient)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M 110 96 Q 125 105 115 125" fill="none" stroke="url(#xrayGradient)" stroke-width="4" stroke-linecap="round"/>
+  
+  <!-- Neural network pattern - top right -->
+  <g opacity="0.6">
+    <!-- Nodes -->
+    <circle cx="145" cy="50" r="4" fill="white"/>
+    <circle cx="160" cy="65" r="4" fill="white"/>
+    <circle cx="155" cy="85" r="4" fill="white"/>
+    <circle cx="140" cy="95" r="4" fill="white"/>
+    
+    <!-- Connections -->
+    <line x1="145" y1="50" x2="160" y2="65" stroke="white" stroke-width="1.5" opacity="0.7"/>
+    <line x1="160" y1="65" x2="155" y2="85" stroke="white" stroke-width="1.5" opacity="0.7"/>
+    <line x1="155" y1="85" x2="140" y2="95" stroke="white" stroke-width="1.5" opacity="0.7"/>
+    <line x1="145" y1="50" x2="155" y2="85" stroke="white" stroke-width="1.5" opacity="0.7"/>
+    <line x1="160" y1="65" x2="140" y2="95" stroke="white" stroke-width="1.5" opacity="0.7"/>
+  </g>
+  
+  <!-- Heartbeat line - bottom -->
+  <path d="M 40 150 L 60 150 L 65 145 L 70 155 L 80 140 L 100 160 L 110 155 L 115 145 L 120 150 L 140 150" 
+        fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity="0.5"/>
+</svg>
